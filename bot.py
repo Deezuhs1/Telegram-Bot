@@ -2,7 +2,7 @@ import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-BOT_TOKEN = os.getenv("7643390545:AAG7mNjIP3cEP_7P6F93DJCdNHP75O89TNI")  # Make sure you set this on Render
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # Make sure you set this on Render
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello! I'm your bot. Use /help for commands.")
