@@ -1,38 +1,48 @@
-
-import os
 import logging
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import os
+from telegram import Update
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+)
 
 # Enable logging
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-
 logger = logging.getLogger(__name__)
 
-# Define a simple start command handler
-def start(update, context):
-    update.message.reply_text('Bot is online and ready to send alerts!')
+# Load the bot token from environment variable or fallback (not recommended)
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_TOKEN_HERE")
 
-# Define a function to send a custom message
-def send_alert(update, context):
-    update.message.reply_text('🚨 Custom alert triggered!')
+# Command handler
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Hello! I'm alive and running via webhook on Render.")
 
+# Error handler
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.error("Exception while handling an update:", exc_info=context.error)
+
+# Main application
 def main():
-    TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not TOKEN:
-        print("TELEGRAM_BOT_TOKEN environment variable not set")
-        return
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
+    # Register handlers
+    app.add_handler(CommandHandler("start", start))
+    app.add_error_handler(error_handler)
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, send_alert))
+    # Set up webhook (Render will provide the public URL)
+    PORT = int(os.environ.get("PORT", 8443))
+    WEBHOOK_URL = f"https://dev-and-cluster-tracker.onrender.com/{BOT_TOKEN}"
 
-    updater.start_polling()
-    updater.idle()
+    # Start webhook
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=BOT_TOKEN,
+        webhook_url=WEBHOOK_URL,
+    )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
