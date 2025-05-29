@@ -1,48 +1,50 @@
 import logging
 import os
+from telegram.ext import Updater, CommandHandler, CallbackContext
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    ContextTypes,
-)
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Load the bot token from environment variable or fallback (not recommended)
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_TOKEN_HERE")
+# Load bot token
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_TOKEN_HERE")  # Replace if not using environment variable
 
-# Command handler
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello! I'm alive and running via webhook on Render.")
+# Define command handlers
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("Hello! Bot is live on Render and responding!")
 
 # Error handler
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.error("Exception while handling an update:", exc_info=context.error)
+def error(update: object, context: CallbackContext):
+    logger.warning('Update "%s" caused error "%s"', update, context.error)
 
-# Main application
+# Main application logic
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    updater = Updater(token=BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-    # Register handlers
-    app.add_handler(CommandHandler("start", start))
-    app.add_error_handler(error_handler)
+    # Add command handlers
+    dp.add_handler(CommandHandler("start", start))
 
-    # Set up webhook (Render will provide the public URL)
-    PORT = int(os.environ.get("PORT", 8443))
-    WEBHOOK_URL = f"https://dev-and-cluster-tracker.onrender.com/{BOT_TOKEN}"
+    # Log all errors
+    dp.add_error_handler(error)
 
-    # Start webhook
-    app.run_webhook(
+    # Set webhook info
+    PORT = int(os.environ.get("PORT", "8443"))
+    WEBHOOK_URL = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME', 'your-app-name.onrender.com')}/{BOT_TOKEN}"
+
+    # Start the webhook
+    updater.start_webhook(
         listen="0.0.0.0",
         port=PORT,
         url_path=BOT_TOKEN,
         webhook_url=WEBHOOK_URL,
     )
+
+    updater.idle()
 
 if __name__ == "__main__":
     main()
