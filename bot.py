@@ -1,20 +1,34 @@
-import os
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import requests
+from flask import Flask, request
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Make sure you set this on Render
+app = Flask(__name__)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello! I'm your bot. Use /help for commands.")
+# === CONFIGURATION ===
+BOT_TOKEN = 'YOUR_BOT_TOKEN'  # Replace with your actual Telegram bot token
+CHAT_IDS = [524164659, 123456789, 987654321]  # Replace with real Telegram user IDs
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Available commands:\n/start - Welcome message\n/help - Show this help")
+# === ALERT FUNCTION (Loop Through Recipients) ===
+def send_alert(message):
+    for chat_id in CHAT_IDS:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": message
+        }
+        try:
+            requests.post(url, json=payload)
+        except Exception as e:
+            print(f"Error sending message to {chat_id}: {e}")
 
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.run_polling()
+# === SAMPLE LOGIC FOR TRIGGERING AN ALERT ===
+@app.route('/trigger-alert', methods=['POST'])
+def trigger_alert():
+    data = request.json
+    token = data.get('token', 'Unknown Token')
+    reason = data.get('reason', 'Golden Cluster Alert')
+    
+    message = f"🚨 Alert: {token} triggered!\nReason: {reason}"
+    send_alert(message)
+    return {'status': 'alert sent'}
 
-if __name__ == "__main__":
-    main()
+# === SAMPLE ENDPOINT TO VERIFY
