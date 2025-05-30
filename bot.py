@@ -1,35 +1,20 @@
 import os
-import threading
-from flask import Flask
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# === Flask App for Render to detect a running web service ===
-app = Flask(__name__)
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # Make sure you set this on Render
 
-@app.route('/')
-def home():
-    return 'Bot is running!'
-
-def run_flask():
-    port = int(os.environ.get("PORT", 5000))  # Render sets this automatically
-    app.run(host="0.0.0.0", port=port)
-
-# === Telegram Bot Logic ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello! I'm alive and running.")
+    await update.message.reply_text("Hello! I'm your bot. Use /help for commands.")
 
-def run_bot():
-    token = os.environ.get("BOT_TOKEN")  # Store your token in Render environment variables
-    application = ApplicationBuilder().token(token).build()
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Available commands:\n/start - Welcome message\n/help - Show this help")
 
-    application.add_handler(CommandHandler("start", start))
+def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
+    app.run_polling()
 
-    application.run_polling()
-
-# === Start both Flask and Telegram in parallel ===
-if __name__ == '__main__':
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.start()
-
-    run_bot()
+if __name__ == "__main__":
+    main()
