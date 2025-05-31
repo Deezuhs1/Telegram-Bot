@@ -1,42 +1,26 @@
-import os
-import logging
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
-# Enable logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+# ✅ Your new token
+TOKEN = "7643390545:AAEnR7LpJ3AEw-APqWvSz5_0tlgAdK9Y0mA"
 
-# Define your command handlers
-def start(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text("Hello! I'm your bot. How can I help?")
+# Start command
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("Hello! I'm alive and working!")
 
-def help_command(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text("Send /start to get started.")
-
-# Main function to start the bot
+# Main function
 def main():
-    token = os.environ.get("TELEGRAM_TOKEN")
-    if not token:
-        logger.error("TELEGRAM_TOKEN environment variable not set.")
-        return
-
-    updater = Updater(token=token, use_context=True)
-
+    updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
 
-    # Register command handlers
+    # Register the /start command
     dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_command))
 
-    # Start the bot using polling
+    # Start polling for updates
     updater.start_polling()
-    logger.info("Bot started with polling.")
+
+    print("Bot is running... Press Ctrl+C to stop.")
     updater.idle()
 
-# Ensure this only runs when script is called directly
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
