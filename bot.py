@@ -3,16 +3,23 @@ import requests
 
 app = Flask(__name__)
 
-# Your bot token
+# ✅ Your actual bot token
 BOT_TOKEN = '7643390545:AAG7mNjIP3cEP_7P6F93DJCdNHP75O89TNI'
 TELEGRAM_API_URL = f'https://api.telegram.org/bot{BOT_TOKEN}'
 
-# Your unique webhook path
-WEBHOOK_PATH = f'/{BOT_TOKEN}'
-FULL_WEBHOOK_URL = f'https://dev-rater-bot.onrender.com{WEBHOOK_PATH}'
+# ✅ Your public Render URL (no token in the path)
+WEBHOOK_URL = 'https://dev-rater-bot.onrender.com/'
 
-@app.route(WEBHOOK_PATH, methods=['POST'])
+@app.before_first_request
+def set_webhook():
+    """Set Telegram webhook to your deployed Render URL."""
+    url = f'{TELEGRAM_API_URL}/setWebhook'
+    response = requests.post(url, json={'url': WEBHOOK_URL})
+    print('Webhook set response:', response.json())
+
+@app.route('/', methods=['POST'])
 def webhook():
+    """This route handles incoming Telegram updates."""
     data = request.get_json()
 
     if not data:
@@ -23,23 +30,17 @@ def webhook():
         text = data['message'].get('text', '')
 
         if text == '/start':
-            send_message(chat_id, "✅ Bot is active and responding!")
+            send_message(chat_id, "👋 Hello! Your Dev Rater bot is now live and ready.")
         else:
             send_message(chat_id, f"You said: {text}")
 
     return 'ok', 200
 
 def send_message(chat_id, text):
+    """Send a message to a Telegram user."""
     url = f'{TELEGRAM_API_URL}/sendMessage'
     payload = {'chat_id': chat_id, 'text': text}
     requests.post(url, json=payload)
 
-# Move webhook setup here
-def set_webhook():
-    url = f'{TELEGRAM_API_URL}/setWebhook'
-    response = requests.post(url, json={'url': FULL_WEBHOOK_URL})
-    print('Webhook set response:', response.json())
-
 if __name__ == '__main__':
-    set_webhook()  # Call this BEFORE running the server
     app.run(host='0.0.0.0', port=10000)
